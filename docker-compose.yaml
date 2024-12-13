@@ -1,0 +1,17 @@
+version: '3.8'
+
+services:
+  sam2_rt:
+    image: sam2_rt
+    build: .
+    runtime: nvidia
+    environment:
+      - HOST_USERNAME=${HOST_USERNAME:-jonas}  # Default to 'default_user' if not set
+      - HOST_UID=${HOST_UID:-1000}  # Default to '1000' if not set
+      - HOST_GID=${HOST_GID:-1000}  # Default to '1000' if not set
+      - NVIDIA_VISIBLE_DEVICES=all  # Use all GPUs
+    volumes:
+      - /home/${HOST_USERNAME}:/home/${HOST_USERNAME}
+    stdin_open: true
+    tty: true
+    command: /bin/bash  # Optionally run bash interactively

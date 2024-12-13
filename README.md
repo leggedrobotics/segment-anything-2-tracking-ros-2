@@ -67,3 +67,11 @@ with torch.inference_mode(), torch.autocast("cuda", dtype=torch.bfloat16):
 
 - SAM2 Repository: https://github.com/facebookresearch/segment-anything-2
 # segement-anything-2-real-time-ros-2
+
+
+Docker:
+build: docker build -t sam2_rt -f Dockerfile .
+run: docker run --gpus all -it -e HOST_USERNAME=$(whoami) -e HOST_UID=$(id -u) -e HOST_GID=$(id -g) -v /home/$(whoami):/home/$(whoami) sam2_rt
+is --network="host" needed ?
+
+run using docker compose: docker-compose run -e HOST_USERNAME=$(whoami) --service-ports sam2_rt
