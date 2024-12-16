@@ -4,26 +4,26 @@
 # This source code is licensed under the license found in the
 # LICENSE file in the root directory of this source tree.
 import os
+
 from setuptools import find_packages, setup
-from torch.utils.cpp_extension import BuildExtension, CUDAExtension
 
 # Package metadata
-NAME = "SAM2"
+NAME = "SAM-2"
 VERSION = "1.0"
 DESCRIPTION = "SAM 2: Segment Anything in Images and Videos"
-URL = "https://github.com/facebookresearch/segment-anything-2"
+URL = "https://github.com/facebookresearch/sam2"
 AUTHOR = "Meta AI"
 AUTHOR_EMAIL = "segment-anything@meta.com"
 LICENSE = "Apache 2.0"
 
 # Read the contents of README file
-with open("README.md", "r") as f:
+with open("README.md", "r", encoding="utf-8") as f:
     LONG_DESCRIPTION = f.read()
 
 # Required dependencies
 REQUIRED_PACKAGES = [
-    "torch>=2.5.1",
-    "torchvision>=0.20.1",
+    "torch>=2.3.1",
+    "torchvision>=0.18.1",
     "numpy>=1.24.4",
     "tqdm>=4.66.1",
     "hydra-core>=1.3.2",
@@ -32,10 +32,37 @@ REQUIRED_PACKAGES = [
 ]
 
 EXTRA_PACKAGES = {
-    "demo": ["matplotlib>=3.9.1", "jupyter>=1.0.0", "opencv-python>=4.7.0"],
-    "dev": ["black==24.2.0", "usort==1.0.2", "ufmt==2.0.0b2"],
+    "notebooks": [
+        "matplotlib>=3.9.1",
+        "jupyter>=1.0.0",
+        "opencv-python>=4.7.0",
+        "eva-decord>=0.6.1",
+    ],
+    "interactive-demo": [
+        "Flask>=3.0.3",
+        "Flask-Cors>=5.0.0",
+        "av>=13.0.0",
+        "dataclasses-json>=0.6.7",
+        "eva-decord>=0.6.1",
+        "gunicorn>=23.0.0",
+        "imagesize>=1.4.1",
+        "pycocotools>=2.0.8",
+        "strawberry-graphql>=0.243.0",
+    ],
+    "dev": [
+        "black==24.2.0",
+        "usort==1.0.2",
+        "ufmt==2.0.0b2",
+        "fvcore>=0.1.5.post20221221",
+        "pandas>=2.2.2",
+        "scikit-image>=0.24.0",
+        "tensorboard>=2.17.0",
+        "pycocotools>=2.0.8",
+        "tensordict>=0.5.0",
+        "opencv-python>=4.7.0",
+        "submitit>=1.5.1",
+    ],
 }
-
 
 # By default, we also build the SAM 2 CUDA extension.
 # You may turn off CUDA build with `export SAM2_BUILD_CUDA=0`.
@@ -52,14 +79,17 @@ CUDA_ERROR_MSG = (
     "Failed to build the SAM 2 CUDA extension due to the error above. "
     "You can still use SAM 2 and it's OK to ignore the error above, although some "
     "post-processing functionality may be limited (which doesn't affect the results in most cases; "
+    "(see https://github.com/facebookresearch/sam2/blob/main/INSTALL.md).\n"
 )
+
 
 def get_extensions():
     if not BUILD_CUDA:
         return []
+
     try:
-        print('HEY')
         from torch.utils.cpp_extension import CUDAExtension
+
         srcs = ["sam2/csrc/connected_components.cu"]
         compile_args = {
             "cxx": [],
@@ -70,10 +100,6 @@ def get_extensions():
                 "-D__CUDA_NO_HALF2_OPERATORS__",
             ],
         }
-        # Adding CUDA architecture flags
-        #arch_list = ['compute_60', 'compute_61', 'compute_70', 'compute_75', 'compute_80', 'compute_86']
-        #for arch in arch_list:
-        #    compile_args["nvcc"].append(f"-gencode=arch={arch},code=sm_{arch[8:]}")
         ext_modules = [CUDAExtension("sam2._C", srcs, extra_compile_args=compile_args)]
     except Exception as e:
         if BUILD_ALLOW_ERRORS:
@@ -81,7 +107,9 @@ def get_extensions():
             ext_modules = []
         else:
             raise e
+
     return ext_modules
+
 
 try:
     from torch.utils.cpp_extension import BuildExtension
@@ -117,13 +145,13 @@ try:
             else BuildExtension.with_options(no_python_abi_suffix=True)
         )
     }
-
 except Exception as e:
     cmdclass = {}
     if BUILD_ALLOW_ERRORS:
         print(CUDA_ERROR_MSG.format(e))
     else:
         raise e
+
 
 # Setup configuration
 setup(
@@ -137,6 +165,7 @@ setup(
     author_email=AUTHOR_EMAIL,
     license=LICENSE,
     packages=find_packages(exclude="notebooks"),
+    include_package_data=True,
     install_requires=REQUIRED_PACKAGES,
     extras_require=EXTRA_PACKAGES,
     python_requires=">=3.10.0",
