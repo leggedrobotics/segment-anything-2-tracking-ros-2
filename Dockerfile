@@ -24,6 +24,7 @@ SHELL ["/bin/bash", "-c"]
 ENV TERM=xterm-256color
 
 # Install necessary packages for Python and OpenCV dependencies
+# qt 5 solves x11 forwarding for GUI
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
         python3 \
@@ -34,7 +35,7 @@ RUN apt-get update && \
         curl \
         ca-certificates \
         build-essential \
-        libqt5core5a \ #solves x11 forwarding for GUI
+        libqt5core5a \ 
         libqt5gui5 \
         libqt5widgets5 \
         qtbase5-dev \
@@ -42,18 +43,60 @@ RUN apt-get update && \
         libglib2.0-0 && \
     rm -rf /var/lib/apt/lists/*
 
+
+# Version
+ARG ROS_DISTRO=humble
+
+# Set up sources.list and keys for ROS 2
+RUN apt update && apt install -y locales && locale-gen en_US.UTF-8 && \
+  export LANG=en_US.UTF-8 && \
+  apt update && apt install -y software-properties-common && \
+  add-apt-repository universe && \
+  curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.asc | gpg --dearmor -o /usr/share/keyrings/ros-archive-keyring.gpg && \
+  echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] \
+  http://packages.ros.org/ros2/ubuntu $(lsb_release -sc) main" | tee /etc/apt/sources.list.d/ros2-latest.list > /dev/null
+
+
+# Setup environment variables for ROS 2
+ENV LANG=en_US.UTF-8 \
+    LC_ALL=en_US.UTF-8 \
+    ROS_DISTRO=${ROS_DISTRO} \
+    ROS_PYTHON_VERSION=3 \
+    COLCON_HOME=/opt/colcon \
+    ROS_ROOT=/opt/ros/${ROS_DISTRO}
+
+ENV PATH="/opt/ros/${ROS_DISTRO}/bin:${PATH}"
+ENV LD_LIBRARY_PATH="/opt/ros/${ROS_DISTRO}/lib:${LD_LIBRARY_PATH}"
+ENV PYTHONPATH="/opt/ros/${ROS_DISTRO}/lib/python3.10/site-packages:${PYTHONPATH}"
+
 # Upgrade pip to the latest version
 RUN python3 -m pip install --upgrade pip
 
 # Install PyTorch using pip (compatible with CUDA 11.8 and cuDNN 8)
 RUN pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
 RUN  pip3 install matplotlib opencv-python imageio
+
+# Install ROS 2 base packages
+RUN apt update && apt install -y \
+  ros-${ROS_DISTRO}-desktop-full \
+  python3-rosdep \
+  python3-colcon-common-extensions \
+  python3-vcstool \
+  && rm -rf /var/lib/apt/lists/* \
+  && rosdep init && rosdep update
+
+
+  # Source ROS 2 setup script
+RUN echo "source /opt/ros/humble/setup.bash" >> ~/.bashrc
+
 # Install SAM2 RT
 COPY ./ /workspace/sam2_rt
+
 
 # Install your package
 WORKDIR /workspace/sam2_rt
 RUN pip3 install -e .
+
 
 # Set the default command to start a Python shell
 CMD ["python3"]
