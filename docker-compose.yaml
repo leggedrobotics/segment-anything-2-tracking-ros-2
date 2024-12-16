@@ -11,7 +11,7 @@ services:
       - HOST_GID=${HOST_GID:-1000}  # Default to '1000' if not set
       - NVIDIA_VISIBLE_DEVICES=all  # Use all GPUs
     volumes:
-      - /home/${HOST_USERNAME}:/home/${HOST_USERNAME}
+      - /home/${HOST_USERNAME}:/home/jonas/Coding
     stdin_open: true
     tty: true
     command: /bin/bash  # Optionally run bash interactively
