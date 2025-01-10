@@ -9,9 +9,12 @@ Run Segment Anything Model 2 on a **live video stream** with ros2 wrapper. Based
 
 
 ### Docker:
-- build: docker build -t sam2_rt -f Dockerfile .
-- run: docker run --gpus all -it -e HOST_USERNAME=$(whoami) -e HOST_UID=$(id -u) -e HOST_GID=$(id -g) -v /home/$(whoami):/home/$(whoami) sam2_rt
-
+- build: ```bash
+docker build -t sam2_rt -f Dockerfile .
+```
+- run:  ```bash
+docker run --gpus all -it -e HOST_USERNAME=$(whoami) -e HOST_UID=$(id -u) -e HOST_GID=$(id -g) -v /home/$(whoami):/home/$(whoami) sam2_rt
+```
 ## Run
 
 python ros2/image_receiver.python
@@ -20,19 +23,8 @@ Click on the object you want to be tracked and let's go
 
 ### Installation
 
-```bash
-pip install -e .
-```
-### Download Checkpoint
 
-Then, we need to download a model checkpoint.
 
-```bash
-cd checkpoints
-./download_ckpts.sh
-```
-
-Then SAM-2-online can be used in a few lines as follows for image and video and **camera** prediction.
 
 
 ## References:
