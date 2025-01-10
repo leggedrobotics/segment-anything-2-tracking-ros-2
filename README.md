@@ -9,10 +9,8 @@ Run Segment Anything Model 2 on a **live video stream** with ros2 wrapper. Based
 
 
 ### Docker:
-- build: ```bash
-docker build -t sam2_rt -f Dockerfile . ```
-- run:  ```bash
-docker run --gpus all -it -e HOST_USERNAME=$(whoami) -e HOST_UID=$(id -u) -e HOST_GID=$(id -g) -v /home/$(whoami):/home/$(whoami) sam2_rt ```
+- build: ``` docker build -t sam2_rt -f Dockerfile . ```
+- run:  ``` docker run --gpus all -it -e HOST_USERNAME=$(whoami) -e HOST_UID=$(id -u) -e HOST_GID=$(id -g) -v /home/$(whoami):/home/$(whoami) sam2_rt ```
 ## Run
 
 python ros2/image_receiver.python
