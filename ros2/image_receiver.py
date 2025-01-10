@@ -36,9 +36,10 @@ class ObjectTracker(Node):
         self.selected_points = []
         self.frame = None
         self.wait_for_clicks = True  # Wait for user input
+        self.number_of_points = 5
 
         # Display window for user clicks
-        self.window_name = "Select 2 Points"
+        self.window_name = f"Select {self.number_of_points} Points"
 
     def image_callback(self, msg):
         # Convert ROS Image to OpenCV image
@@ -51,8 +52,8 @@ class ObjectTracker(Node):
             cv2.imshow(self.window_name, cv2.cvtColor(self.frame, cv2.COLOR_RGB2BGR))
             cv2.setMouseCallback(self.window_name, self.mouse_callback)
 
-            self.get_logger().info("Please click on 2 points in the image...")
-            while len(self.selected_points) < 2:
+            self.get_logger().info(f"Please click on {self.number_of_points} points in the image...")
+            while len(self.selected_points) < self.number_of_points:
                 if cv2.waitKey(1) & 0xFF == ord("q"):
                     self.get_logger().info("User aborted point selection.")
                     self.destroy_node()
@@ -66,7 +67,8 @@ class ObjectTracker(Node):
             self.track_objects(self.frame)
 
     def mouse_callback(self, event, x, y, flags, param):
-        if event == cv2.EVENT_LBUTTONDOWN and len(self.selected_points) < 2:
+        if event == cv2.EVENT_LBUTTONDOWN and len(self.selected_points) < self.number_of_points:
+            print(len(self.selected_points), self.number_of_points)
             self.selected_points.append((x, y))
             self.get_logger().info(f"Point selected: ({x}, {y})")
             # Visualize the selected point
@@ -75,7 +77,7 @@ class ObjectTracker(Node):
 
     def initialize_sam2(self, frame):
         points = np.array(self.selected_points, dtype=np.float32)
-        labels = np.array([1, 1])  # Labels: foreground
+        labels = np.ones(len(self.selected_points))  # Labels: foreground
         ann_frame_idx = 0
         ann_obj_id = 1
 

@@ -74,4 +74,4 @@ build: docker build -t sam2_rt -f Dockerfile .
 run: docker run --gpus all -it -e HOST_USERNAME=$(whoami) -e HOST_UID=$(id -u) -e HOST_GID=$(id -g) -v /home/$(whoami):/home/$(whoami) sam2_rt
 is --network="host" needed ?
 
-run using docker compose: docker-compose run -e HOST_USERNAME=$(whoami) --service-ports sam2_rt
+run using docker compose: docker-compose run -e HOST_USERNAME=$(whoami) --service-ports  sam2_rt

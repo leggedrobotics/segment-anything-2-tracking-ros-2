@@ -7,7 +7,7 @@
 import logging
 
 import torch
-from hydra import compose
+from hydra import initialize, compose
 from hydra.utils import instantiate
 from omegaconf import OmegaConf
 
@@ -84,6 +84,8 @@ def build_sam2_camera_predictor(
     hydra_overrides_extra=[],
     apply_postprocessing=True,
 ):
+    if not hydra.core.global_hydra.GlobalHydra.instance().is_initialized():
+            initialize(config_path="../configs", job_name="sam2_predictor")
     hydra_overrides = [
         "++model._target_=sam2.sam2_camera_predictor.SAM2CameraPredictor",
     ]
