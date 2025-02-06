@@ -21,8 +21,13 @@ class ObjectTracker(Node):
             Image,
             '/camMainView/image_raw',  # Replace with your camera topic
             self.image_callback,
-            10)
+            10
+        )
         self.publisher = self.create_publisher(Point, '/object_position', 10)
+        
+        # **Mask publisher** on topic '/src/mask'
+        self.mask_publisher = self.create_publisher(Image, '/src/mask', 10)
+
         self.bridge = CvBridge()
 
         # SAM2 model initialization
@@ -68,6 +73,10 @@ class ObjectTracker(Node):
         if self.frame is None:
             return
 
+<<<<<<< HEAD
+=======
+        # Wait for user to select points
+>>>>>>> 09f1a42 (changed to publish mask)
         if self.wait_for_clicks:
             # Display the frame with any selected points
             display_frame = self.frame.copy()
@@ -118,6 +127,10 @@ class ObjectTracker(Node):
         height, width = frame.shape[:2]
         all_mask = np.zeros((height, width), dtype=np.uint8)
 
+        # Prepare a blank single-channel mask
+        all_mask_gray = np.zeros((height, width), dtype=np.uint8)
+
+        # Merge all object masks
         for i in range(len(out_obj_ids)):
             mask = (out_mask_logits[i] > 0.0).permute(1, 2, 0).cpu().numpy().astype(np.uint8) * 235
             all_mask = cv2.bitwise_or(all_mask, mask)
