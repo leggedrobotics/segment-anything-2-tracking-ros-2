@@ -26,7 +26,7 @@ class ObjectTracker(Node):
         self.bridge = CvBridge()
 
         # SAM2 model initialization
-        sam2_checkpoint = "/home/jonas/Coding/boulder_perception/ros2_ws/src/sam2ros2/checkpoints/sam2_hiera_large.pt"
+        sam2_checkpoint = "/workspace/sam2_rt/checkpoints/sam2_hiera_large.pt"
         model_cfg = "sam2_hiera_l.yaml"
 
         self.predictor = build_sam2_camera_predictor(model_cfg, sam2_checkpoint)
