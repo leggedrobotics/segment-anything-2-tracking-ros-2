@@ -19,14 +19,14 @@ class ObjectTracker(Node):
         super().__init__('object_tracker')
         self.subscription = self.create_subscription(
             Image,
-            '/camera1/rgb',  # Replace with your camera topic
+            '/camMainView/image_raw',  # Replace with your camera topic
             self.image_callback,
             10)
         self.publisher = self.create_publisher(Point, '/object_position', 10)
         self.bridge = CvBridge()
 
         # SAM2 model initialization
-        sam2_checkpoint = "/home/jonas/Coding/boulder_perception/segment-anything-2-real-time/checkpoints/sam2_hiera_large.pt"
+        sam2_checkpoint = "/home/jonas/Coding/boulder_perception/ros2_ws/src/sam2ros2/checkpoints/sam2_hiera_large.pt"
         model_cfg = "sam2_hiera_l.yaml"
 
         self.predictor = build_sam2_camera_predictor(model_cfg, sam2_checkpoint)
@@ -95,7 +95,7 @@ class ObjectTracker(Node):
         all_mask = np.zeros((height, width, 1), dtype=np.uint8)
 
         for i in range(len(out_obj_ids)):
-            out_mask = (out_mask_logits[i] > 0.0).permute(1, 2, 0).cpu().numpy().astype(np.uint8) * 255
+            out_mask = (out_mask_logits[i] > 0.0).permute(1, 2, 0).cpu().numpy().astype(np.uint8) * 235
             all_mask = cv2.bitwise_or(all_mask, out_mask)
 
         # Combine mask with the frame

@@ -5,7 +5,7 @@
 # LICENSE file in the root directory of this source tree.
 
 import logging
-
+import hydra
 import torch
 from hydra import initialize, compose
 from hydra.utils import instantiate
