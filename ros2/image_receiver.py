@@ -130,6 +130,8 @@ class ObjectTracker(Node):
        all_mask_bgr = cv2.cvtColor(all_mask_gray, cv2.COLOR_GRAY2BGR)
 
 
+       # Convert single-channel (gray) to 3-channel (BGR)
+       all_mask_bgr = cv2.cvtColor(all_mask_gray, cv2.COLOR_GRAY2BGR)
        # Publish the mask as a color image
        mask_msg = self.bridge.cv2_to_imgmsg(all_mask_bgr, encoding='bgr8')
        self.mask_publisher.publish(mask_msg)
