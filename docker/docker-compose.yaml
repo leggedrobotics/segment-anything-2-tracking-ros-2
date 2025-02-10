@@ -1,38 +1,49 @@
-
 version: '3.8'
 
 services:
   sam2_rt:
     image: sam2_rt
+    build: .
+    # Enable NVIDIA GPU support
     runtime: nvidia
+    privileged: true
+    network_mode: host
+    ipc: host
+    cap_add:
+      - ALL
+    devices:
+      - "/dev/dri:/dev/dri"
+    shm_size: "2gb"
     environment:
-      - HOST_USERNAME=${HOST_USERNAME:-lterenzi}  # Default to 'jonas' (set HOST_USERNAME in your shell if needed)
+      # Host user settings
+      - HOST_USERNAME=${HOST_USERNAME:-jonas}
       - HOST_UID=${HOST_UID:-1000}
       - HOST_GID=${HOST_GID:-1000}
+      # GPU settings
       - NVIDIA_VISIBLE_DEVICES=all
       - NVIDIA_DRIVER_CAPABILITIES=all
+      # X11 settings
       - DISPLAY=${DISPLAY}
       - QT_X11_NO_MITSHM=1
       - XAUTHORITY=/tmp/.docker.xauth
+      # SSH agent forwarding
       - SSH_AUTH_SOCKET=/ssh-agent
     volumes:
-      - ${HOME}:${HOME}
-      - /tmp/.X11-unix:/tmp/.X11-unix
-      - /tmp/.docker.xauth:/tmp/.docker.xauth:rw
-      - ${SSH_AUTH_SOCK}:/ssh-agent
+      # X11 Unix socket      - /tmp/.X11-unix:/tmp/.X11-unix:rw
+      # Xauthority file (make sure to create this file on your host,
+      # for example by following the logic in your docker_launch.sh)
+      # SSH agent socket (this requires your SSH_AUTH_SOCK variable to be set)
+      # Allow access to host GPU drivers
       - /lib/modules:/lib/modules
-      - ./.etc/shadow:/etc/shadow
-      - ./.etc/passwd:/etc/passwd
-      - ./.etc/group:/etc/group
+      # Mount your home folder (adjust if needed)
+      - ${HOME}:${HOME}
+      # Mount host user configuration files (create the local “.etc” folder as in your script)
+      - /etc/shadow:/etc/shadow
+      - /etc/passwd:/etc/passwd
+      - /etc/group:/etc/group
+      # Sync host time settings
       - /etc/localtime:/etc/localtime:ro
-    devices:
-      - /dev/dri:/dev/dri
-    network_mode: host
-    ipc: host
-    privileged: true
-    cap_add:
-      - ALL
-    shm_size: 2gb
-    entrypoint: /entrypoint.sh
     stdin_open: true
     tty: true
+    command: /bin/bash
+
