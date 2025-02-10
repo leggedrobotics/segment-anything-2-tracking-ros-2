@@ -1,21 +1,38 @@
+
 version: '3.8'
 
 services:
   sam2_rt:
     image: sam2_rt
-    build: .
     runtime: nvidia
     environment:
-      - HOST_USERNAME=${HOST_USERNAME:-jonas}  # Default to 'jonas' if not set
-      - HOST_UID=${HOST_UID:-1000}             # Default to '1000' if not set
-      - HOST_GID=${HOST_GID:-1000}             # Default to '1000' if not set
-      - NVIDIA_VISIBLE_DEVICES=all             # Use all GPUs
-      - DISPLAY=${DISPLAY}                     # Pass the host's DISPLAY variable
-      - QT_X11_NO_MITSHM=1                     # Fix for some X11 issues with shared memory
+      - HOST_USERNAME=${HOST_USERNAME:-lterenzi}  # Default to 'jonas' (set HOST_USERNAME in your shell if needed)
+      - HOST_UID=${HOST_UID:-1000}
+      - HOST_GID=${HOST_GID:-1000}
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=all
+      - DISPLAY=${DISPLAY}
+      - QT_X11_NO_MITSHM=1
+      - XAUTHORITY=/tmp/.docker.xauth
+      - SSH_AUTH_SOCKET=/ssh-agent
     volumes:
-      - /home/${HOST_USERNAME}:/home
-      - /tmp/.X11-unix:/tmp/.X11-unix         # Mount the X11 socket
+      - ${HOME}:${HOME}
+      - /tmp/.X11-unix:/tmp/.X11-unix
+      - /tmp/.docker.xauth:/tmp/.docker.xauth:rw
+      - ${SSH_AUTH_SOCK}:/ssh-agent
+      - /lib/modules:/lib/modules
+      - ./.etc/shadow:/etc/shadow
+      - ./.etc/passwd:/etc/passwd
+      - ./.etc/group:/etc/group
+      - /etc/localtime:/etc/localtime:ro
+    devices:
+      - /dev/dri:/dev/dri
+    network_mode: host
+    ipc: host
+    privileged: true
+    cap_add:
+      - ALL
+    shm_size: 2gb
+    entrypoint: /entrypoint.sh
     stdin_open: true
     tty: true
-    # Optionally, you can override the command if needed:
-    # command: /bin/bash
