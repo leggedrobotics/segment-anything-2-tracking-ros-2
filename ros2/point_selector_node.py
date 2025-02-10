@@ -26,14 +26,15 @@ class PointSelector(Node):
         self.selected_points = []
         self.number_of_points = 5  # Adjust as needed
         self.window_name = f"Select {self.number_of_points} Points"
-        self.selection_done = False
 
         # Create the window and set the mouse callback once
         cv2.namedWindow(self.window_name)
         cv2.setMouseCallback(self.window_name, self.mouse_callback)
 
-        # Use a timer callback to update the display and check for completion
-        self.timer = self.create_timer(0.1, self.timer_callback)
+        # Timer for updating the display (e.g., 10 Hz)
+        self.display_timer = self.create_timer(0.1, self.timer_callback)
+        # Timer for publishing points at a lower frequency (e.g., 1 Hz)
+        self.publish_timer = self.create_timer(1.0, self.publish_points_callback)
 
     def image_callback(self, msg):
         try:
@@ -53,16 +54,16 @@ class PointSelector(Node):
         disp_frame = self.latest_frame.copy()
         for pt in self.selected_points:
             cv2.circle(disp_frame, (pt[0], pt[1]), 5, (255, 0, 0), -1)
-        # Show the image in a window (convert back to BGR for OpenCV display)
+        # Display the image (convert back to BGR for OpenCV display)
         cv2.imshow(self.window_name, cv2.cvtColor(disp_frame, cv2.COLOR_RGB2BGR))
         key = cv2.waitKey(1) & 0xFF
         if key == ord('q'):
             self.get_logger().info("User aborted point selection.")
             self.destroy_node()
 
-        # When enough points have been selected, publish them
-        if len(self.selected_points) >= self.number_of_points and not self.selection_done:
-            self.get_logger().info(f"Selected points: {self.selected_points}")
+    def publish_points_callback(self):
+        # Publish only when the required number of points has been selected
+        if len(self.selected_points) >= self.number_of_points:
             poly = Polygon()
             for pt in self.selected_points:
                 p = Point32()
@@ -72,8 +73,6 @@ class PointSelector(Node):
                 poly.points.append(p)
             self.publisher.publish(poly)
             self.get_logger().info("Published selected points on '/selected_points'.")
-            self.selection_done = True
-            cv2.destroyWindow(self.window_name)
 
     def mouse_callback(self, event, x, y, flags, param):
         if event == cv2.EVENT_LBUTTONDOWN and len(self.selected_points) < self.number_of_points:
