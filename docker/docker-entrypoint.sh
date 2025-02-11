@@ -8,11 +8,25 @@ cd /workspace/sam2_rt
 if [ ! -f extension_built.marker ]; then
   echo "Building C++/CUDA extensions..."
   python3 setup.py build_ext --inplace
-  # Create a marker file to indicate that the build has been done
   touch extension_built.marker
 else
   echo "C++/CUDA extensions already built, skipping rebuild."
 fi
 
-# Execute the container's CMD
-exec "$@"
+# Set home for host user
+export HOME=/home/$HOST_USERNAME
+export USER=$HOST_USERNAME
+
+# If we are running as root, set up sudoers
+if [ "$EUID" -eq 0 ]; then
+  # Enable sudo access without password
+  echo "root ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
+  echo "$HOST_USERNAME ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
+
+  # Now switch to $HOST_USERNAME and run the container's CMD
+  exec sudo -E -u "$HOST_USERNAME" --preserve-env=HOME \
+       bash -c "cd $HOME && exec \"$@\""
+else
+  # We’re already a non-root user; just run the CMD
+  exec "$@"
+fi
