@@ -17,16 +17,22 @@ fi
 export HOME=/home/$HOST_USERNAME
 export USER=$HOST_USERNAME
 
-# If we are running as root, set up sudoers
+# If running as root, set up sudoers and switch to the host user while sourcing ROS Humble
 if [ "$EUID" -eq 0 ]; then
-  # Enable sudo access without password
+  # Enable sudo access without a password
   echo "root ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
   echo "$HOST_USERNAME ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
 
-  # Now switch to $HOST_USERNAME and run the container's CMD
+  # Switch to $HOST_USERNAME:
+  #  - Source ROS Humble
+  #  - Change directory to the desired workspace location
+  #  - Execute the container's CMD
   exec sudo -E -u "$HOST_USERNAME" --preserve-env=HOME \
-       bash -c "cd $HOME && exec \"$@\""
+       bash -c 'source /opt/ros/humble/setup.bash && cd "$HOME/boulder_ws/src/segement-anything-2-real-time-ros-2" && exec "$@"' _ "$@"
 else
-  # We’re already a non-root user; just run the CMD
+  # If already non-root, source ROS Humble,
+  # change to the desired workspace location, and execute the CMD.
+  source /opt/ros/humble/setup.bash
+  cd "$HOME/boulder_ws/src/segement-anything-2-real-time-ros-2"
   exec "$@"
 fi
