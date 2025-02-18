@@ -83,9 +83,9 @@ class ObjectTracker(Node):
             else:
                 self.get_logger().debug("Selected points not yet received. Skipping initialization.")
         else:
-            # Otherwise, perform tracking
+            # Otherwise, perform tracking and pass the original msg header along
             self.get_logger().debug("Tracking objects on new frame")
-            self.track_objects(frame_rgb)
+            self.track_objects(frame_rgb, msg)
 
     def initialize_sam2(self, frame):
         # Prepare a label array (here all ones for foreground)
@@ -100,7 +100,7 @@ class ObjectTracker(Node):
         self.if_init = True
         self.get_logger().info("Initialized SAM2 with selected points.")
 
-    def track_objects(self, frame):
+    def track_objects(self, frame, img_msg):
         out_obj_ids, out_mask_logits = self.predictor.track(frame)
         self.get_logger().debug(f"Track output: {len(out_obj_ids)} objects detected")
         height, width = frame.shape[:2]
@@ -108,8 +108,8 @@ class ObjectTracker(Node):
         all_mask_gray = np.zeros((height, width), dtype=np.uint8)
         # Merge all object masks
         for i in range(len(out_obj_ids)):
-            # Convert the tensor mask to numpy array; expected tensor shape is [1, H, W]
             try:
+                # Convert the tensor mask to numpy array; expected tensor shape is [1, H, W]
                 out_mask = (out_mask_logits[i] > 0.0).permute(1, 2, 0).cpu().numpy()
                 out_mask = out_mask.astype(np.uint8) * 235
                 all_mask_gray = cv2.bitwise_or(all_mask_gray, out_mask.squeeze())
@@ -118,10 +118,13 @@ class ObjectTracker(Node):
                 self.get_logger().error(f"Error processing mask for object {i}: {e}")
                 continue
 
-        # Prepare a color mask and publish it
+        # Prepare a color mask and publish it with the same header as the image_raw message
         try:
             all_mask_bgr = cv2.cvtColor(all_mask_gray, cv2.COLOR_GRAY2BGR)
             mask_msg = self.bridge.cv2_to_imgmsg(all_mask_bgr, encoding='bgr8')
+            # Copy the header (stamp and frame_id) from the original image message
+            mask_msg.header.stamp = img_msg.header.stamp
+            mask_msg.header.frame_id = img_msg.header.frame_id
             self.mask_publisher.publish(mask_msg)
             self.get_logger().info("Published mask message on /src/mask")
         except Exception as e:
