@@ -1,0 +1,3 @@
+# Configuration for camera topics
+camera_topic: "/camMainView/image_raw"
+mask_topic: "/src/mask"

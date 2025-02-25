@@ -7,6 +7,8 @@ import cv2
 import numpy as np
 from sam2.build_sam import build_sam2_camera_predictor
 import torch
+import yaml
+import os
 
 torch.autocast(device_type="cuda", dtype=torch.bfloat16).__enter__()
 
@@ -17,16 +19,26 @@ if torch.cuda.get_device_properties(0).major >= 8:
 class ObjectTracker(Node):
     def __init__(self):
         super().__init__('object_tracker')
+        
+        # Load configuration from config.yaml in the same folder
+        config_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "config.yaml")
+        with open(config_path, "r") as f:
+            config = yaml.safe_load(f)
+        
+        camera_topic = config.get("camera_topic", "/camMainView/image_raw")
+        mask_topic = config.get("mask_topic", "/src/mask")
+
+        # Subscribe to the input camera topic from config
         self.subscription = self.create_subscription(
             Image,
-            '/camMainView/image_raw',  # Replace with your camera topic
+            camera_topic,
             self.image_callback,
             10
         )
         self.publisher = self.create_publisher(Point, '/object_position', 10)
       
-        # **Mask publisher** on topic '/src/mask'
-        self.mask_publisher = self.create_publisher(Image, '/src/mask', 10)
+        # Publish mask images on the topic from config
+        self.mask_publisher = self.create_publisher(Image, mask_topic, 10)
 
         self.bridge = CvBridge()
 
@@ -65,7 +77,7 @@ class ObjectTracker(Node):
             self.get_logger().info(f"Selected points: {self.selected_points}")
             self.initialize_sam2(self.frame)
         else:
-            # Perform tracking and pass the original image message for header
+            # Perform tracking and pass the original image message for header info
             self.track_objects(self.frame, msg)
 
     def mouse_callback(self, event, x, y, flags, param):
