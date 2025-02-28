@@ -29,7 +29,9 @@ services:
       # SSH agent forwarding
       - SSH_AUTH_SOCKET=/ssh-agent
     volumes:
-      # X11 Unix socket      - /tmp/.X11-unix:/tmp/.X11-unix:rw
+      # X11 Unix socket      - 
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
+      - /tmp/.docker.xauth:/tmp/.docker.xauth:rw
       # Xauthority file (make sure to create this file on your host,
       # for example by following the logic in your docker_launch.sh)
       # SSH agent socket (this requires your SSH_AUTH_SOCK variable to be set)

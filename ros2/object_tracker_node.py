@@ -2,12 +2,13 @@
 import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import Image
-from geometry_msgs.msg import Point, Polygon
+from geometry_msgs.msg import Polygon
 from cv_bridge import CvBridge
 import cv2
 import numpy as np
 import torch
 from sam2.build_sam import build_sam2_camera_predictor
+import time  # For timing the function execution
 
 # Setup torch settings (adjust as needed for your CUDA device)
 torch.autocast(device_type="cuda", dtype=torch.bfloat16).__enter__()
@@ -36,9 +37,7 @@ class ObjectTracker(Node):
         )
         self.get_logger().info("Subscribed to topic: /selected_points")
 
-        # Publishers for the object position and mask image
-        self.publisher = self.create_publisher(Point, '/object_position', 10)
-        self.get_logger().info("Publishing to topic: /object_position")
+        # Removed publisher for object position
         self.mask_publisher = self.create_publisher(Image, '/src/mask', 10)
         self.get_logger().info("Publishing to topic: /src/mask")
 
@@ -101,6 +100,7 @@ class ObjectTracker(Node):
         self.get_logger().info("Initialized SAM2 with selected points.")
 
     def track_objects(self, frame, img_msg):
+        start_time = time.time()  # Start timing the tracking process
         out_obj_ids, out_mask_logits = self.predictor.track(frame)
         self.get_logger().debug(f"Track output: {len(out_obj_ids)} objects detected")
         height, width = frame.shape[:2]
@@ -118,7 +118,7 @@ class ObjectTracker(Node):
                 self.get_logger().error(f"Error processing mask for object {i}: {e}")
                 continue
 
-        # Prepare a color mask and publish it with the same header as the image_raw message
+        # Prepare a color mask and publish it with the same header as the original image message
         try:
             all_mask_bgr = cv2.cvtColor(all_mask_gray, cv2.COLOR_GRAY2BGR)
             mask_msg = self.bridge.cv2_to_imgmsg(all_mask_bgr, encoding='bgr8')
@@ -130,17 +130,9 @@ class ObjectTracker(Node):
         except Exception as e:
             self.get_logger().error(f"Error publishing mask image: {e}")
 
-        # Publish the center point as the object position
-        cx, cy = width // 2, height // 2
-        self.publish_position(cx, cy)
-
-    def publish_position(self, x, y):
-        point = Point()
-        point.x = float(x)
-        point.y = float(y)
-        point.z = 0.0
-        self.publisher.publish(point)
-        self.get_logger().info(f"Object position published: x={x}, y={y}")
+        # Compute and log the duration of the tracking operation in milliseconds
+        duration_ms = (time.time() - start_time) * 1000
+        self.get_logger().info(f"track_objects duration: {duration_ms:.2f} ms")
 
 def main(args=None):
     rclpy.init(args=args)
