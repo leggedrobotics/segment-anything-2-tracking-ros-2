@@ -49,8 +49,8 @@ class ObjectTracker(Node):
         self.if_init = False
 
         # Initialize the SAM2 predictor (adjust paths as needed)
-        sam2_checkpoint = "/workspace/sam2_rt/checkpoints/sam2_hiera_large.pt"
-        model_cfg = "sam2_hiera_l.yaml"
+        sam2_checkpoint = "/workspace/sam2_rt/checkpoints/sam2_hiera_small.pt"
+        model_cfg = "sam2_hiera_s.yaml"
         self.predictor = build_sam2_camera_predictor(model_cfg, sam2_checkpoint)
         self.get_logger().info("SAM2 predictor built.")
 

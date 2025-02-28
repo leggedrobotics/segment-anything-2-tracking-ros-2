@@ -29,7 +29,7 @@ if [ "$EUID" -eq 0 ]; then
   #  - Execute the Python node
   exec sudo -E -u "$HOST_USERNAME" --preserve-env=HOME \
        bash -c 'source /opt/ros/humble/setup.bash && \
-                cd "$HOME/boulder_ws/src/segement-anything-2-real-time-ros-2" && \
+                cd "$HOME/boulder_ws/src/segment-anything-2-real-time-ros-2" && \
                 python3 ros2/object_tracker_node.py'
 else
   # If already non-root, source ROS Humble,
