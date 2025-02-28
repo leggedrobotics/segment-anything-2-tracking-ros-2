@@ -8,6 +8,8 @@ services:
     runtime: nvidia
     privileged: true
     network_mode: host
+    working_dir: /app
+    entrypoint: ./docker-entrypoint-no-execution.sh
     ipc: host
     cap_add:
       - ALL
@@ -29,7 +31,8 @@ services:
       # SSH agent forwarding
       - SSH_AUTH_SOCKET=/ssh-agent
     volumes:
-      # X11 Unix socket      - 
+      # X11 Unix socket
+      - .:/app
       - /tmp/.X11-unix:/tmp/.X11-unix:rw
       - /tmp/.docker.xauth:/tmp/.docker.xauth:rw
       # Xauthority file (make sure to create this file on your host,

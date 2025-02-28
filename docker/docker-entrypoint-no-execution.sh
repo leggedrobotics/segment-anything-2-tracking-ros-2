@@ -22,18 +22,14 @@ if [ "$EUID" -eq 0 ]; then
   echo "root ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
   echo "$HOST_USERNAME ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
 
-  # Switch to $HOST_USERNAME, source ROS, change to the ros2 directory,
-  # run the Python node, and finally launch an interactive shell.
+  # Switch to $HOST_USERNAME, source ROS, change directory, and launch an interactive shell.
   sudo -E -u "$HOST_USERNAME" --preserve-env=HOME bash -c '\
     source /opt/ros/humble/setup.bash && \
     cd "$HOME/boulder_ws/src/segment-anything-2-real-time-ros-2/ros2" && \
-    python3 object_tracker_node.py; \
     exec bash'
 else
-  # For non-root users, source ROS, change directory, run the Python node,
-  # then drop into an interactive shell.
+  # For non-root users, source ROS, change directory, and launch an interactive shell.
   source /opt/ros/humble/setup.bash
   cd "$HOME/boulder_ws/src/segment-anything-2-real-time-ros-2/ros2"
-  python3 object_tracker_node.py
   exec bash
 fi
