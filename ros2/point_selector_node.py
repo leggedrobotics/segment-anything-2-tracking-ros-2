@@ -1,4 +1,24 @@
 #!/usr/bin/env python3
+# MIT License
+# 
+# Copyright (c) 2025 Jonas Grütter
+# 
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# (Full MIT License text should be included in the LICENSE file)
+#
+# This file is part of an open-source object tracking node using SAM2.
+# The node subscribes to a camera image topic, loads a configuration file,
+# and allows the user to manually select points from the image. These points
+# are then used to initialize a SAM2 predictor for object tracking. The node
+# publishes both a mask image and an example object position (center of the image).
+#
+# For more details and instructions, please refer to the project README.
 import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import Image
