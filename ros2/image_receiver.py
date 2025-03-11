@@ -31,6 +31,7 @@ from sam2.build_sam import build_sam2_camera_predictor
 import torch
 import yaml
 import os
+import time  # For timing and tracking updates
 
 # Configure torch for optimal performance with CUDA devices.
 torch.autocast(device_type="cuda", dtype=torch.bfloat16).__enter__()
@@ -179,6 +180,7 @@ class ObjectTracker(Node):
             frame (np.array): The current image frame in RGB format.
             img_msg (Image): The original ROS image message (used for header information).
         """
+        start_time = time.time()  # Start timing the tracking process.
         # Use the predictor to track objects in the frame.
         out_obj_ids, out_mask_logits = self.predictor.track(frame)
         height, width = frame.shape[:2]
@@ -203,9 +205,6 @@ class ObjectTracker(Node):
         all_mask_rgb = cv2.cvtColor(all_mask_gray, cv2.COLOR_GRAY2RGB)
         frame_overlay = cv2.addWeighted(frame, 1, all_mask_rgb, 0.5, 0)
 
-        # Publish an example object position (center of the image).
-        cx, cy = width // 2, height // 2
-        self.publish_position(cx, cy)
 
         # Display the tracking result in an OpenCV window.
         cv2.imshow("Tracked Frame", cv2.cvtColor(frame_overlay, cv2.COLOR_RGB2BGR))
@@ -213,20 +212,9 @@ class ObjectTracker(Node):
             self.get_logger().info("Tracking stopped by user.")
             self.destroy_node()
 
-    def publish_position(self, x, y):
-        """
-        Publish the object position as a ROS Point message.
+        duration_ms = (time.time() - start_time) * 1000
+        self.get_logger().info(f"track_objects duration: {duration_ms:.2f} ms")
 
-        Args:
-            x (float): The x-coordinate of the object position.
-            y (float): The y-coordinate of the object position.
-        """
-        point = Point()
-        point.x = float(x)
-        point.y = float(y)
-        point.z = 0.0
-        self.publisher.publish(point)
-        self.get_logger().info(f"Object position published: x={x}, y={y}")
 
 def main(args=None):
     """
