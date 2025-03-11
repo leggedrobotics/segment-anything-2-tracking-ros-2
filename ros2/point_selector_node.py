@@ -26,14 +26,23 @@ from geometry_msgs.msg import Polygon, Point32
 from cv_bridge import CvBridge
 import cv2
 import numpy as np
-
+import yaml
+import os
 class PointSelector(Node):
     def __init__(self):
         super().__init__('point_selector')
+        # Load configuration from config.yaml located in the same folder as this script.
+        config_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "config.yaml")
+        with open(config_path, "r") as f:
+            config = yaml.safe_load(f)
+        
+        # Retrieve topic names from the configuration with defaults.
+        camera_topic = config.get("camera_topic", "/camMainView/image_raw")
+        
         # Subscribe to the raw camera image topic
         self.subscription = self.create_subscription(
             Image,
-            '/camMainView/image_raw',  # Change if needed
+            camera_topic,  # Change if needed
             self.image_callback,
             10
         )

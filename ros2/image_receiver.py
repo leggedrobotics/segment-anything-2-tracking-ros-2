@@ -113,6 +113,8 @@ class ObjectTracker(Node):
 
         # If the node is waiting for user clicks to select points.
         if self.wait_for_clicks:
+            self.get_logger().info(f"Selected points: {self.selected_points}")
+
             # Reset selected points each time a new frame is received.
             self.selected_points = []
             # Show the frame in a window for user interaction.

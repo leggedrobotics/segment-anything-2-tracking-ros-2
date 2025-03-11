@@ -35,7 +35,8 @@ import numpy as np
 import torch
 from sam2.build_sam import build_sam2_camera_predictor
 import time  # For timing and tracking updates
-
+import yaml
+import os
 # Setup torch settings (adjust as needed for your CUDA device)
 torch.autocast(device_type="cuda", dtype=torch.bfloat16).__enter__()
 if torch.cuda.get_device_properties(0).major >= 8:
@@ -61,14 +62,23 @@ class ObjectTracker(Node):
     def __init__(self):
         super().__init__('object_tracker')
 
+        # Load configuration from config.yaml located in the same folder as this script.
+        config_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "config.yaml")
+        with open(config_path, "r") as f:
+            config = yaml.safe_load(f)
+        
+        # Retrieve topic names from the configuration with defaults.
+        camera_topic = config.get("camera_topic", "/camMainView/image_raw")
+        mask_topic = config.get("mask_topic", "/src/mask")
+
         # Subscribe to the camera image topic.
         self.subscription = self.create_subscription(
             Image,
-            '/camMainView/image_raw',  # Topic name for camera images.
+            camera_topic,  # Topic name for camera images.
             self.image_callback,
             10
         )
-        self.get_logger().info("Subscribed to topic: /camMainView/image_raw")
+        self.get_logger().info(f"Subscribed to camera topic: {camera_topic}")
 
         # Subscribe to the selected points topic.
         self.points_sub = self.create_subscription(
@@ -80,8 +90,8 @@ class ObjectTracker(Node):
         self.get_logger().info("Subscribed to topic: /selected_points")
 
         # Publisher for output mask images.
-        self.mask_publisher = self.create_publisher(Image, '/src/mask', 10)
-        self.get_logger().info("Publishing to topic: /src/mask")
+        self.mask_publisher = self.create_publisher(Image, mask_topic, 10)
+        self.get_logger().info(f"Publishing mask images on topic: {mask_topic}")
 
         # Bridge to convert between ROS Image messages and OpenCV images.
         self.bridge = CvBridge()
