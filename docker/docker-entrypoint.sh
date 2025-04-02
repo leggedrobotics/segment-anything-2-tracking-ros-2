@@ -3,7 +3,6 @@ set -e
 
 # Optional: Change to the workspace directory if needed
 cd /workspace/sam2_rt
-export ROS_DOMAIN_ID=72
 # Check if the extension has already been built (using a marker file)
 if [ ! -f extension_built.marker ]; then
   echo "Building C++/CUDA extensions..."
