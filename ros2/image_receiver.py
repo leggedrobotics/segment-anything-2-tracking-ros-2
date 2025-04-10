@@ -202,6 +202,10 @@ class ObjectTracker(Node):
         mask_msg.header.stamp = img_msg.header.stamp
         mask_msg.header.frame_id = img_msg.header.frame_id
         self.mask_publisher.publish(mask_msg)
+        
+        # Log latency
+        latency = rclpy.time.Time.from_msg(mask_msg.header.stamp)-self.get_clock().now()
+        self.get_logger().info(f'Latency after publishing mask: {latency.nanoseconds / 1e6:.3f} ms')
 
         # For demonstration, overlay the mask on the original frame.
         all_mask_rgb = cv2.cvtColor(all_mask_gray, cv2.COLOR_GRAY2RGB)
