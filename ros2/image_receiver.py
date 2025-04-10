@@ -32,6 +32,13 @@ import torch
 import yaml
 import os
 import time  # For timing and tracking updates
+from rclpy.qos import QoSProfile, ReliabilityPolicy, HistoryPolicy
+
+qos_profile = QoSProfile(
+    depth=1,
+    reliability=ReliabilityPolicy.RELIABLE,
+    history=HistoryPolicy.KEEP_LAST
+)
 
 # Configure torch for optimal performance with CUDA devices.
 torch.autocast(device_type="cuda", dtype=torch.bfloat16).__enter__()
@@ -61,7 +68,7 @@ class ObjectTracker(Node):
             config = yaml.safe_load(f)
         
         # Retrieve topic names from the configuration with defaults.
-        camera_topic = config.get("camera_topic", "/camMainView/image_raw")
+        camera_topic = config.get("camera_topic", "zed/zed_node/rgb/image_rect_color")
         mask_topic = config.get("mask_topic", "/src/mask")
 
         # Subscribe to the input camera topic (configured topic).
@@ -69,7 +76,7 @@ class ObjectTracker(Node):
             Image,
             camera_topic,
             self.image_callback,
-            10
+            qos_profile
         )
         self.get_logger().info(f"Subscribed to camera topic: {camera_topic}")
 
@@ -107,6 +114,16 @@ class ObjectTracker(Node):
         points if required, and either initializes the SAM2 predictor or performs object
         tracking on the incoming frame.
         """
+        # latency before inference
+        image_time = rclpy.time.Time.from_msg(msg.header.stamp)
+        # Get the current time from the node's clock.
+        now = self.get_clock().now()
+        # Calculate the latency as the difference between now and when the image was stamped.
+        latency = now - image_time
+        # Convert latency to milliseconds (1e6 nanoseconds in a millisecond).
+        latency_ms = latency.nanoseconds / 1e6
+        self.get_logger().info(f"Image latency: {latency_ms:.2f} ms")
+
         # Convert the ROS Image to an OpenCV image in BGR format and then to RGB.
         self.frame = self.bridge.imgmsg_to_cv2(msg, desired_encoding='bgr8')
         self.frame = cv2.cvtColor(self.frame, cv2.COLOR_BGR2RGB)
@@ -204,7 +221,7 @@ class ObjectTracker(Node):
         self.mask_publisher.publish(mask_msg)
         
         # Log latency
-        latency = rclpy.time.Time.from_msg(mask_msg.header.stamp)-self.get_clock().now()
+        latency = self.get_clock().now()-rclpy.time.Time.from_msg(mask_msg.header.stamp)
         self.get_logger().info(f'Latency after publishing mask: {latency.nanoseconds / 1e6:.3f} ms')
 
         # For demonstration, overlay the mask on the original frame.
