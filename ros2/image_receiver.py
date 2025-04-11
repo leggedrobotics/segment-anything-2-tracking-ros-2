@@ -56,7 +56,8 @@ class ObjectTracker(Node):
     selected, it initializes the SAM2 predictor. The node then tracks objects in subsequent
     images and publishes a mask image along with a demo object position (the image center).
 
-    The user may abort point selection by pressing 'q' in the selection window.
+    The user may abort point selection by pressing 'q' in the selection window, and can now
+    reset tracking by clicking the "Reset" button in the tracking window.
     """
 
     def __init__(self):
@@ -105,6 +106,8 @@ class ObjectTracker(Node):
 
         # Name of the window used for point selection.
         self.window_name = f"Select {self.number_of_points} Points"
+
+        self.reset_requested = False
 
     def image_callback(self, msg):
         """
@@ -166,6 +169,19 @@ class ObjectTracker(Node):
             cv2.circle(self.frame, (x, y), 5, (0, 0, 255), -1)
             cv2.imshow(self.window_name, cv2.cvtColor(self.frame, cv2.COLOR_RGB2BGR))
 
+    def reset_button_callback(self, event, x, y, flags, param):
+        """
+        Mouse callback for the reset button in the "Tracked Frame" window.
+        Instead of immediately destroying the window, set a flag to trigger a reset.
+        """
+        button_top_left = (10, 10)
+        button_bottom_right = (110, 50)
+        if event == cv2.EVENT_LBUTTONDOWN:
+            if button_top_left[0] <= x <= button_bottom_right[0] and button_top_left[1] <= y <= button_bottom_right[1]:
+                self.get_logger().info("Reset button clicked. Requesting reset of SAM2.")
+                self.reset_requested = True
+
+
     def initialize_sam2(self, frame):
         """
         Initialize the SAM2 predictor using the user-selected points.
@@ -190,14 +206,7 @@ class ObjectTracker(Node):
     def track_objects(self, frame, img_msg):
         """
         Perform object tracking on the given frame using the SAM2 predictor.
-
-        Processes the output masks from the predictor, merges them into a single mask,
-        converts the mask for visualization, publishes the mask message, and publishes an
-        example object position (center of the image).
-
-        Args:
-            frame (np.array): The current image frame in RGB format.
-            img_msg (Image): The original ROS image message (used for header information).
+        Also checks if a reset was requested to safely reset SAM2 outside of the callback.
         """
         start_time = time.time()  # Start timing the tracking process.
         # Use the predictor to track objects in the frame.
@@ -220,23 +229,43 @@ class ObjectTracker(Node):
         mask_msg.header.frame_id = img_msg.header.frame_id
         self.mask_publisher.publish(mask_msg)
         
-        # Log latency
-        latency = self.get_clock().now()-rclpy.time.Time.from_msg(mask_msg.header.stamp)
+        # Log latency after publishing.
+        latency = self.get_clock().now() - rclpy.time.Time.from_msg(mask_msg.header.stamp)
         self.get_logger().info(f'Latency after publishing mask: {latency.nanoseconds / 1e6:.3f} ms')
 
         # For demonstration, overlay the mask on the original frame.
         all_mask_rgb = cv2.cvtColor(all_mask_gray, cv2.COLOR_GRAY2RGB)
         frame_overlay = cv2.addWeighted(frame, 1, all_mask_rgb, 0.5, 0)
 
+        # Overlay a reset button on the tracked frame.
+        button_top_left = (10, 10)
+        button_bottom_right = (110, 50)
+        cv2.rectangle(frame_overlay, button_top_left, button_bottom_right, (0, 0, 255), -1)  # Filled rectangle
+        cv2.putText(frame_overlay, "Reset", (20, 40), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
 
-        # Display the tracking result in an OpenCV window.
+        # Display the tracking result in an OpenCV window with the reset button.
         cv2.imshow("Tracked Frame", cv2.cvtColor(frame_overlay, cv2.COLOR_RGB2BGR))
+        cv2.setMouseCallback("Tracked Frame", self.reset_button_callback)
+
+        # Process any key input.
         if cv2.waitKey(1) & 0xFF == ord("q"):
             self.get_logger().info("Tracking stopped by user.")
             self.destroy_node()
 
+        # Check if a reset was requested
+        if self.reset_requested:
+            self.get_logger().info("Performing reset of SAM2 and waiting for new points.")
+            cv2.destroyWindow("Tracked Frame")
+            self.predictor.reset_state()
+            self.wait_for_clicks = True
+            self.if_init = False
+            self.selected_points = []
+            self.reset_requested = False
+            return  # Exit early, so that new point selection is triggered.
+
         duration_ms = (time.time() - start_time) * 1000
         self.get_logger().info(f"track_objects duration: {duration_ms:.2f} ms")
+
 
 
 def main(args=None):

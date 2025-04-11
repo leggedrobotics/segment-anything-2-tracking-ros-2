@@ -42,6 +42,13 @@ torch.autocast(device_type="cuda", dtype=torch.bfloat16).__enter__()
 if torch.cuda.get_device_properties(0).major >= 8:
     torch.backends.cuda.matmul.allow_tf32 = True
     torch.backends.cudnn.allow_tf32 = True
+from rclpy.qos import QoSProfile, ReliabilityPolicy, HistoryPolicy
+
+qos_profile = QoSProfile(
+    depth=1,
+    reliability=ReliabilityPolicy.RELIABLE,
+    history=HistoryPolicy.KEEP_LAST
+)
 
 class ObjectTracker(Node):
     """
@@ -76,7 +83,7 @@ class ObjectTracker(Node):
             Image,
             camera_topic,  # Topic name for camera images.
             self.image_callback,
-            10
+            qos_profile
         )
         self.get_logger().info(f"Subscribed to camera topic: {camera_topic}")
 
